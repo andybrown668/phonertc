@@ -315,8 +315,8 @@ module.exports = {
         localVideoView = document.createElement('video');
         localVideoView.autoplay = true;
         localVideoView.muted = true;
-        localVideoView.style.position = 'absolute';
-        localVideoView.style.zIndex = 999;
+        // localVideoView.style.position = 'absolute';
+        // localVideoView.style.zIndex = 999;
         localVideoView.addEventListener("loadedmetadata", scaleToFill);
 
         refreshLocalVideoView();
@@ -341,7 +341,7 @@ module.exports = {
           localVideoView.load();         
         }
 
-        document.body.appendChild(localVideoView);
+        config.container.appendChild(localVideoView);
       } else {    
         refreshLocalVideoView();
         refreshVideoContainer();
@@ -366,14 +366,14 @@ function addRemoteStream(stream) {
   var videoView = document.createElement('video');
   videoView.autoplay = true;
   videoView.addEventListener("loadedmetadata", scaleToFill);
-  videoView.style.position = 'absolute';
-  videoView.style.zIndex = 998;
+  // videoView.style.position = 'absolute';
+  // videoView.style.zIndex = 998;
 
   videoView.src = URL.createObjectURL(stream);
   videoView.load();
 
   remoteVideoViews.push(videoView);
-  document.body.appendChild(videoView);
+  videoConfig.container.appendChild(videoView);
 
   refreshVideoContainer();
   return videoView;
@@ -420,11 +420,11 @@ function refreshVideoContainer() {
 
     for (var video = 0; video < videosInRow && videoViewIndex < n; video++) {
       var videoView = remoteVideoViews[videoViewIndex++];
-      videoView.style.width = videoSize + 'px';
-      videoView.style.height = videoSize + 'px';
+      videoView.style.width = '100%';
+      videoView.style.height = '100%';
 
-      videoView.style.left = x + 'px';
-      videoView.style.top = y + 'px';
+      // videoView.style.left = x + 'px';
+      // videoView.style.top = y + 'px';
 
       x += videoSize;
     }
@@ -434,14 +434,14 @@ function refreshVideoContainer() {
 }
 
 function refreshLocalVideoView() {
-  localVideoView.style.width = videoConfig.local.size[0] + 'px';
-  localVideoView.style.height = videoConfig.local.size[1] + 'px';
+  localVideoView.style.width = '100%';
+  localVideoView.style.height = '100%';
 
-  localVideoView.style.left = 
-    (videoConfig.containerParams.position[0] + videoConfig.local.position[0]) + 'px';
+  // localVideoView.style.left = 
+  //   (videoConfig.containerParams.position[0] + videoConfig.local.position[0]) + 'px';
 
-  localVideoView.style.top = 
-    (videoConfig.containerParams.position[1] + videoConfig.local.position[1]) + 'px';       
+  // localVideoView.style.top = 
+  //   (videoConfig.containerParams.position[1] + videoConfig.local.position[1]) + 'px';       
 }
 
 function scaleToFill(event) {
@@ -461,11 +461,11 @@ function scaleToFill(event) {
     if (lastScaleType !== scaleType || lastAdjustmentRatio !== adjustmentRatio) {
       var transform = scaleType + '(' + adjustmentRatio + ')';
 
-      element.style.webkitTransform = transform;
-      element.style.MozTransform = transform;
-      element.style.msTransform = transform;
-      element.style.OTransform = transform;
-      element.style.transform = transform;
+      // element.style.webkitTransform = transform;
+      // element.style.MozTransform = transform;
+      // element.style.msTransform = transform;
+      // element.style.OTransform = transform;
+      // element.style.transform = transform;
 
       lastScaleType = scaleType;
       lastAdjustmentRatio = adjustmentRatio;
