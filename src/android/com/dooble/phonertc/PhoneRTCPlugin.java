@@ -337,7 +337,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 			_videoView = null;
 		}
 		
-		if (n > 0) {	
+		if (n >= 0) { 	
 			createVideoView();
 			
 			int rows = n < 9 ? 2 : 3;
