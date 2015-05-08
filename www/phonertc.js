@@ -119,8 +119,9 @@ Session.prototype.off = function (eventName, fn) {
     }
   }
 
+  var self = this;
   indexesToRemove.forEach(function (index) {
-    this.events.splice(index, 1);
+    self.events[eventName].splice(index, 1);
   })
 };
 
@@ -148,7 +149,8 @@ Session.prototype.close = function () {
   exec(null, null, 'PhoneRTCPlugin', 'disconnect', [{ 
     sessionKey: this.sessionKey
   }]);
-};
+  this.events = {};
+  };
 
 exports.Session = Session;
 
