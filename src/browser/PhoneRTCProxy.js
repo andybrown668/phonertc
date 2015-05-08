@@ -162,14 +162,15 @@ Session.prototype.call = function () {
   function call() {
     // create the peer connection
     self.peerConnection = new PeerConnection({
-      iceServers: [
+//    	iceTransports : 'relay',
+    	iceServers: [
         { 
           url: 'stun:stun.l.google.com:19302' 
         },
         { 
           url: self.config.turn.host, 
           username: self.config.turn.username, 
-          password: self.config.turn.password 
+        credential: self.config.turn.password 
         }
       ]
     }, { optional: [ { DtlsSrtpKeyAgreement: true } ]});

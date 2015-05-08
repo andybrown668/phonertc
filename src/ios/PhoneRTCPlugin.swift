@@ -86,9 +86,9 @@ class PhoneRTCPlugin : CDVPlugin {
     func sendMessage(callbackId: String, message: NSData) {
         let json = NSJSONSerialization.JSONObjectWithData(message,
             options: NSJSONReadingOptions.MutableLeaves,
-            error: nil) as NSDictionary
+            error: nil) as! NSDictionary
         
-        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json)
+        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json as [NSObject : AnyObject])
         pluginResult.setKeepCallbackAsBool(true);
         
         self.commandDelegate.sendPluginResult(pluginResult, callbackId:callbackId)
@@ -100,6 +100,8 @@ class PhoneRTCPlugin : CDVPlugin {
         dispatch_async(dispatch_get_main_queue()) {
             // create session config from the JS params
             let videoConfig = VideoConfig(data: config)
+            
+            println("\(videoConfig) yeah?")
             
             // make sure that it's not junk
             if videoConfig.container.width == 0 || videoConfig.container.height == 0 {
@@ -248,17 +250,17 @@ class PhoneRTCPlugin : CDVPlugin {
     }
     
     func refreshVideoContainer() {
-        let n = self.remoteVideoViews.count
+        var n = self.remoteVideoViews.count
         
         if n == 0 {
             return
         }
         
-        let rows = n < 9 ? 2 : 3
-        let videosInRow = n == 2 ? 2 : Int(ceil(Float(n) / Float(rows)))
+        var rows = n < 9 ? 2 : 3
+        var videosInRow = n == 2 ? 2 : Int(ceil(Float(n) / Float(rows)))
         
-        let videoSize = Int(Float(self.videoConfig!.container.width) / Float(videosInRow))
-        let actualRows = Int(ceil(Float(n) / Float(videosInRow)))
+        var videoSize = Int(Float(self.videoConfig!.container.width) / Float(videosInRow))
+        var actualRows = Int(ceil(Float(n) / Float(videosInRow)))
  
         var y = getCenter(actualRows,
             videoSize: videoSize,
