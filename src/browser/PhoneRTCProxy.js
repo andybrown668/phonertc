@@ -248,7 +248,6 @@ Session.prototype.renegotiate = function () {
 };
 
 Session.prototype.disconnect = function (sendByeMessage) {
-  console.log(this.videoView);
   if (this.videoView) {
     removeRemoteStream(this.videoView);
   }
@@ -257,9 +256,11 @@ Session.prototype.disconnect = function (sendByeMessage) {
     this.sendMessage({ type: 'bye' });
   }
 
-  this.peerConnection.close();
-  this.peerConnection = null;
-
+  if (this.peerConnection){
+	  this.peerConnection.close();
+	  this.peerConnection = null;
+  }
+  
   this.sendMessage({ type: '__disconnected' });
 
   onSessionDisconnect(this.sessionKey);
