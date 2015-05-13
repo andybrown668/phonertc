@@ -170,7 +170,7 @@ function getLayoutParams(videoElement) {
   };
 }
 
-function setVideoView(config) {
+function setVideoView(config, success, error) {
   videoViewConfig = config;
 
   var container = config.container;
@@ -182,7 +182,7 @@ function setVideoView(config) {
 
   config.devicePixelRatio = window.devicePixelRatio || 2;
 
-  exec(null, null, 'PhoneRTCPlugin', 'setVideoView', [config]);
+  exec(success, error, 'PhoneRTCPlugin', 'setVideoView', [config]);
 
   if (container) {
     config.container = container;

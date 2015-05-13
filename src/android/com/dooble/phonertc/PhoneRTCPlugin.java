@@ -102,7 +102,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 					try {
 						if (_sessions.containsKey(sessionKey)) {
 							_sessions.get(sessionKey).call();
-							_callbackContext.success();
+							_callbackContext.success(); 
 						} else {
 							_callbackContext.error("No session found matching the key: '" + sessionKey + "'");
 						}
@@ -188,6 +188,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 					} else {						
 						_videoView.setLayoutParams(_videoParams);
 					}
+					_callbackContext.success();
 				}
 			});
 			
@@ -389,7 +390,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 		return getPercentage((int)Math.round((containerSize - videoSize * videoCount) / 2.0), containerSize);
 	}
 	
-	PluginResult getSessionKeyPluginResult(String sessionKey) throws JSONException {
+	PluginResult getSessionKeyPluginResult(String sessionKey) throws JSONException { //
 		JSONObject json = new JSONObject();
 		json.put("type", "__set_session_key");
 		json.put("sessionKey", sessionKey);

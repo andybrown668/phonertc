@@ -156,7 +156,7 @@ Session.prototype.sendAnswer = function () {
   }, { mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: !!videoConfig }});
 }
 
-Session.prototype.call = function () {
+Session.prototype.call = function (success, error) {
   var self = this;
 
   function call() {
@@ -207,11 +207,18 @@ Session.prototype.call = function () {
       }
 
       call();
-    }, function (error) {
-      console.log(error);
+      if (success)
+    	  success();
+    }, function (e) {
+    	if (error)
+    		error(e);
+    	else
+    		throw new Error(e);
     });
   } else {
     call();
+    if (success)
+  	  success();
   } 
 };
 
@@ -285,7 +292,7 @@ module.exports = {
     sessions[sessionKey] = session;
   },
   call: function (success, error, options) {
-    sessions[options[0].sessionKey].call();
+    sessions[options[0].sessionKey].call(success, error);
   },
   receiveMessage: function (success, error, options) {
     sessions[options[0].sessionKey]
@@ -332,8 +339,10 @@ module.exports = {
 
             localVideoView.src = URL.createObjectURL(stream);
             localVideoView.load();
-          }, function (error) {
-            console.log(error);
+            if (success)
+          	  success();
+          }, function (e) {
+        	  throw e;
           }); 
         } else {
           var stream = new MediaStream();

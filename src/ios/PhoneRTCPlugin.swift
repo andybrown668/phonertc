@@ -40,6 +40,10 @@ class PhoneRTCPlugin : CDVPlugin {
             dispatch_async(dispatch_get_main_queue()) {
                 if let session = self.sessions[sessionKey] {
                     session.call()
+                    // allow for a success callback
+                    let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
+                    pluginResult.setKeepCallbackAsBool(true);
+                    self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
                 }
             }
         }
@@ -145,6 +149,11 @@ class PhoneRTCPlugin : CDVPlugin {
                 
                 self.refreshVideoContainer()
             }
+            // allow for a success callback
+            let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
+            pluginResult.setKeepCallbackAsBool(true);
+            self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
+
         }
     }
     
