@@ -316,7 +316,7 @@ module.exports = {
 
     if (videoConfig.containerParams.size[0] === 0 
         || videoConfig.containerParams.size[1] === 0) {
-      return;
+      throw 'local video container has no size';
     }
 
     if (videoConfig.local) {
@@ -357,6 +357,9 @@ module.exports = {
         refreshLocalVideoView();
         refreshVideoContainer();
       }
+    }
+    else if (localVideoView) {
+    	dropLocalStreams();    
     }
   },
   hideVideoView: function (success, error, options) {
@@ -472,11 +475,11 @@ function scaleToFill(event) {
     if (lastScaleType !== scaleType || lastAdjustmentRatio !== adjustmentRatio) {
       var transform = scaleType + '(' + adjustmentRatio + ')';
 
-      element.style.webkitTransform = transform;
-      element.style.MozTransform = transform;
-      element.style.msTransform = transform;
-      element.style.OTransform = transform;
-      element.style.transform = transform;
+//      element.style.webkitTransform = transform;
+//      element.style.MozTransform = transform;
+//      element.style.msTransform = transform;
+//      element.style.OTransform = transform;
+//      element.style.transform = transform;
 
       lastScaleType = scaleType;
       lastAdjustmentRatio = adjustmentRatio;
@@ -488,22 +491,26 @@ function scaleToFill(event) {
   refreshTransform();
 }
 
+function dropLocalStreams(){
+    if (localVideoView) {
+        document.body.removeChild(localVideoView);
+        localVideoView = null;
+      }
+
+      localStreams.forEach(function (stream) {
+        stream.stop();
+      });
+
+      localStreams = [];
+      localVideoTrack = null;
+      localAudioTrack = null;
+	};
+
 function onSessionDisconnect(sessionKey) {
   delete sessions[sessionKey];
 
   if (Object.keys(sessions).length === 0) {
-    if (localVideoView) {
-      document.body.removeChild(localVideoView);
-      localVideoView = null;
-    }
-
-    localStreams.forEach(function (stream) {
-      stream.stop();
-    });
-
-    localStreams = [];
-    localVideoTrack = null;
-    localAudioTrack = null;
+	  dropLocalStreams();
   }
 }
 
