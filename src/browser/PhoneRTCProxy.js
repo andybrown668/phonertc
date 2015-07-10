@@ -326,7 +326,7 @@ module.exports = {
         localVideoView.muted = true;
         localVideoView.style.position = 'absolute';
         localVideoView.style.zIndex = 999;
-        localVideoView.addEventListener("loadedmetadata", scaleToFill);
+        localVideoView.addEventListener("loadeddata", scaleToFill);
 
         refreshLocalVideoView();
 
@@ -379,7 +379,7 @@ module.exports = {
 function addRemoteStream(stream) {
   var videoView = document.createElement('video');
   videoView.autoplay = true;
-  videoView.addEventListener("loadedmetadata", scaleToFill);
+  videoView.addEventListener("loadeddata", scaleToFill);
   videoView.style.position = 'absolute';
   videoView.style.zIndex = 998;
 
