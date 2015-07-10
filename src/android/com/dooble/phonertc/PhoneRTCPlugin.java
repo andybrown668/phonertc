@@ -10,6 +10,7 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.view.View;
 import android.webkit.WebView;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -44,7 +45,8 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 	private WebView.LayoutParams _videoParams;
 	private boolean _shouldDispose = true;
 	private boolean _initializedAndroidGlobals = false;
-	
+	private final String TAG = "capiche.rtc.phone";
+
 	public PhoneRTCPlugin() {
 		_remoteVideos = new ArrayList<VideoTrackRendererPair>();
 		_sessions = new HashMap<String, Session>();
@@ -54,6 +56,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 	public boolean execute(String action, JSONArray args,
 			CallbackContext callbackContext) throws JSONException {
 
+		Log.i(TAG, "execute " + action);
 		final CallbackContext _callbackContext = callbackContext;
 		
 		if (action.equals("createSessionObject")) {		
@@ -61,6 +64,13 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 			
 			final String sessionKey = args.getString(0);
 			_callbackContext.sendPluginResult(getSessionKeyPluginResult(sessionKey));
+			_sessions.put(sessionKey, new Session(PhoneRTCPlugin.this, 
+					_callbackContext, config, sessionKey));
+			Log.i(TAG, "Created new session " + sessionKey);
+
+			if (_sessions.size() > 1) {
+				_shouldDispose = false;
+			}
 			
 			cordova.getActivity().runOnUiThread(new Runnable() {
 				public void run() {					
@@ -81,13 +91,6 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 					
 					if (config.isVideoStreamEnabled() && _localVideo == null) {		
 						initializeLocalVideoTrack();
-					}
-					
-					_sessions.put(sessionKey, new Session(PhoneRTCPlugin.this, 
-							_callbackContext, config, sessionKey));
-					
-					if (_sessions.size() > 1) {
-						_shouldDispose = false;
 					}
 				}
 			});
@@ -117,10 +120,19 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 			JSONObject container = args.getJSONObject(0);
 			final String sessionKey = container.getString("sessionKey");
 			final String message = container.getString("message");
-
+			final JSONObject msg = new JSONObject(message);
+			final String type = msg.getString("type");
+			
 			cordova.getThreadPool().execute(new Runnable() {
-				public void run() {
-					_sessions.get(sessionKey).receiveMessage(message);
+				public void run(){
+					Session session = _sessions.get(sessionKey);
+					if (session != null){
+						Log.d(TAG, "received message for session " + sessionKey + ":" + type);
+						session.receiveMessage(message);
+					}
+					else {
+						Log.w(TAG, "received message for invalid session " + sessionKey + ":" + type);
+					}
 				}
 			});
 
