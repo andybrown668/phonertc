@@ -354,7 +354,6 @@ module.exports = {
 
         document.body.appendChild(localVideoView);
       } else {
-    	  scaleToFill();
         refreshLocalVideoView();
         refreshVideoView();
       }
