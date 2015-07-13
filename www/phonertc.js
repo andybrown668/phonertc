@@ -177,13 +177,18 @@ function setVideoView(config, success, error) {
 
   if (container) {
     config.containerParams = getLayoutParams(container);
-    delete config.container;
+    //remove the container - is this because it can't be marshalled to the device?
+    if (cordova.platformId !== 'browser'){
+    	delete config.container;
+    }
   }
 
   config.devicePixelRatio = window.devicePixelRatio || 2;
 
+  //the success callback will receive the size
   exec(success, error, 'PhoneRTCPlugin', 'setVideoView', [config]);
 
+  //put the container back in the config
   if (container) {
     config.container = container;
   }
@@ -196,6 +201,14 @@ document.addEventListener('touchmove', function () {
 });
 
 exports.setVideoView = setVideoView;
+
+exports.refreshVideoView = function (config) {
+	if (!videoViewConfig)
+		return;
+	videoViewConfig.containerParams = getLayoutParams(config.container);
+	
+  exec(null, null, 'PhoneRTCPlugin', 'refreshVideoView', [videoViewConfig.containerParams]);
+};
 
 exports.hideVideoView = function () {
   exec(null, null, 'PhoneRTCPlugin', 'hideVideoView', []);

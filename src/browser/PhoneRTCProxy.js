@@ -326,7 +326,7 @@ module.exports = {
         localVideoView.muted = true;
         localVideoView.style.position = 'absolute';
         localVideoView.style.zIndex = 999;
-        localVideoView.addEventListener("loadeddata", scaleToFill);
+        localVideoView.addEventListener("loadeddata", refreshVideoView);
 
         refreshLocalVideoView();
 
@@ -353,15 +353,23 @@ module.exports = {
         }
 
         document.body.appendChild(localVideoView);
-      } else {    
+      } else {
+    	  scaleToFill();
         refreshLocalVideoView();
-        refreshVideoContainer();
+        refreshVideoView();
       }
     }
     else if (localVideoView) {
     	dropLocalStreams();    
     }
   },
+  
+  refreshVideoView: function(success, error, layoutParams){
+	  //recalculate the dimensions of the video container, then refresh the remote videos
+	  videoConfig.containerParams = layoutParams;
+	  refreshVideoView();
+  },
+  
   hideVideoView: function (success, error, options) {
     localVideoView.style.display = 'none';
     remoteVideoViews.forEach(function (remoteVideoView) {
@@ -379,7 +387,7 @@ module.exports = {
 function addRemoteStream(stream) {
   var videoView = document.createElement('video');
   videoView.autoplay = true;
-  videoView.addEventListener("loadeddata", scaleToFill);
+  videoView.addEventListener("loadeddata", refreshVideoView);
   videoView.style.position = 'absolute';
   videoView.style.zIndex = 998;
 
@@ -389,7 +397,7 @@ function addRemoteStream(stream) {
   remoteVideoViews.push(videoView);
   document.body.appendChild(videoView);
 
-  refreshVideoContainer();
+  refreshVideoView();
   return videoView;
 }
 
@@ -399,52 +407,11 @@ function removeRemoteStream(videoView) {
   remoteVideoViews.splice(videoView, 1);
   console.log(remoteVideoViews);
 
-  refreshVideoContainer();
+  refreshVideoView();
 }
 
 function getCenter(videoCount, videoSize, containerSize) {
   return Math.round((containerSize - videoSize * videoCount) / 2); 
-}
-
-function refreshVideoContainer() {
-  var n = remoteVideoViews.length;
-
-  if (n === 0) {
-    return;
-  }
-
-  var rows = n < 9 ? 2 : 3;
-  var videosInRow = n === 2 ? 2 : Math.ceil(n/rows);    
-
-  var videoSize = videoConfig.containerParams.size[0] / videosInRow;
-  var actualRows = Math.ceil(n / videosInRow);
-
-  var y = getCenter(actualRows, 
-                    videoSize,
-                    videoConfig.containerParams.size[1])
-          + videoConfig.containerParams.position[1];
-
-  var videoViewIndex = 0;
-
-  for (var row = 0; row < rows && videoViewIndex < n; row++) {
-    var x = videoConfig.containerParams.position[0] + 
-      getCenter(row < rows - 1 || n % rows === 0 ? videosInRow : n - (Math.min(n, videoViewIndex + videosInRow) - 1), 
-                videoSize,
-                videoConfig.containerParams.size[0]);
-
-    for (var video = 0; video < videosInRow && videoViewIndex < n; video++) {
-      var videoView = remoteVideoViews[videoViewIndex++];
-      videoView.style.width = videoSize + 'px';
-      videoView.style.height = videoSize + 'px';
-
-      videoView.style.left = x + 'px';
-      videoView.style.top = y + 'px';
-
-      x += videoSize;
-    }
-
-    y += videoSize;
-  }
 }
 
 function refreshLocalVideoView() {
@@ -458,37 +425,123 @@ function refreshLocalVideoView() {
     (videoConfig.containerParams.position[1] + videoConfig.local.position[1]) + 'px';       
 }
 
-function scaleToFill(event) {
-  var element = this;
-  var targetRatio = element.offsetWidth / element.offsetHeight;
-  var lastScaleType, lastAdjustmentRatio;
+function refreshVideoView(event) {
+	/*
+	 * resize the container to contain the remote video(s) without letter-boxing.
+	 * we won't ever make the container bigger - only reduce it's width or height.
+	 * 
+	 * note, this is called when a video has loaded and when the window is just resized
+	 * 
+	 * in the first case, we'll know the target and we adjust the target to contain the video without letter-boxing.
+	 * we'll then re-enter this routine to do the second case below.
+	 * 
+	 * in the second case, we need to divide the container so the contained videos are largest while keeping the
+	 * correct aspect ratio
+	 * 
+	 */
+	
+	target = event && event.target ? event.target : null;
+	if (target){
+		//first case - just set the video dimensions to completely enclose the video without letter-boxing
+		var newHeight = (parseInt(target.style.width) * target.videoHeight) / target.videoWidth;
+		target.style.height = newHeight;
+		//now fall through to the second case
+	}
 
-  function refreshTransform () {
-    var widthIsLargerThanHeight = element.videoWidth > element.videoHeight;
-    var actualRatio = element.videoWidth / element.videoHeight;
+	//second case scale all remote videos to the container
+	
+	// Bounds class definition
+	var Bounds = function(rect){
+		this.top = rect.top || 0;
+		this.left = rect.left || 0;
+		this.width = rect.width || 0;
+		this.height = rect.height || 0;
+		
+		this.aspectRatio = function() { return this.width / this.height };
+		
+		this.copy = function() { return new Bounds({top:1*this.top, left:1*this.left, width:1*this.width, height:1*this.height}); };
+		
+		this.splitHorz = function() { 
+			var halfWidth = this.width / 2;
+			b1 = this.copy();
+			b2 = this.copy();
+			b1.width = b2.width = halfWidth;
+			b2.left += halfWidth;
+			return [b1, b2];
+		}
+		this.splitVert = function() { 
+			var halfHeight = this.height / 2;
+			b1 = this.copy();
+			b2 = this.copy();
+			b1.height = b2.height = halfHeight;
+			b2.top += halfHeight;
+			return [b1, b2];
+		}
+		
+		this.aspectDiff = function(other){
+			return Math.abs(this.aspectRatio() - other.aspectRatio());
+		};
 
-    var scaleType = widthIsLargerThanHeight ? 'scaleY' : 'scaleX';
-    var adjustmentRatio = widthIsLargerThanHeight ? 
-      actualRatio / targetRatio : 
-      targetRatio / actualRatio ; 
+		this.setBoundingClientRect = function(el){
+			el.style.top = this.top;
+			el.style.left = this.left;
+			el.style.width = this.width;
+			el.style.height = this.height;
+		};
+	};
+	var getBoundsFromEl = function (el) { return new Bounds(el.getBoundingClientRect()); }
+	
+	var containerBounds = getBoundsFromEl(videoConfig.container);
+	var containers;
 
-    if (lastScaleType !== scaleType || lastAdjustmentRatio !== adjustmentRatio) {
-      var transform = scaleType + '(' + adjustmentRatio + ')';
+	var nVideos = remoteVideoViews.length;
 
-//      element.style.webkitTransform = transform;
-//      element.style.MozTransform = transform;
-//      element.style.msTransform = transform;
-//      element.style.OTransform = transform;
-//      element.style.transform = transform;
+	if (nVideos == 0){
+		return;
+	}
+	
+	else if (nVideos == 1){
+		//no container split required for single remote video
+		containers = [containerBounds];
+	}
+	
+	else{
+		/* split the container so the aspect ratios of the resulting parts is closest to the video aspect ration
+		 * assume all videos are the same ratio
+		 */
+		var videoBounds = getBoundsFromEl(remoteVideoViews[0]);
+		
+		//keep the split having the containers that best match the video aspect ratio
+		var splitVert = containerBounds.splitVert();
+		var splitHorz = containerBounds.splitHorz();
+		if (splitVert[0].aspectDiff(videoBounds) < splitHorz[0].aspectDiff(videoBounds)){
+			containers = splitVert;
+		}
+		else{
+			containers = splitHorz;
+		}
+	}	
 
-      lastScaleType = scaleType;
-      lastAdjustmentRatio = adjustmentRatio;
-    }
+	// change the video bounds to fit each container
+	for (var n = 0; n < nVideos; n++){
+		var containerBounds = containers[n];
+		videoBounds = getBoundsFromEl(remoteVideoViews[n]);
+		
+		//video fills the container without changing its aspect ratio 
+		var newVideoBounds = containerBounds.copy();
+		if (containerBounds.height > (newVideoBounds.height = containerBounds.width/videoBounds.aspectRatio()))
+			newVideoBounds.width = containerBounds.width;
+		else{
+			newVideoBounds.height = containerBounds.height;
+			newVideoBounds.width = newVideoBounds.height * videoBounds.aspectRatio();
+		}
+		
+		//center the video in its container
+		newVideoBounds.left += (containerBounds.width - newVideoBounds.width) / 2;
+		newVideoBounds.top += (containerBounds.height - newVideoBounds.height) / 2;
+		newVideoBounds.setBoundingClientRect(remoteVideoViews[n])
 
-    setTimeout(refreshTransform, 100);
-  }
-
-  refreshTransform();
+	}
 }
 
 function dropLocalStreams(){
