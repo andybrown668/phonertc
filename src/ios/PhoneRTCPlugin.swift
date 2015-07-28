@@ -1,3 +1,4 @@
+//version
 import Foundation
 import AVFoundation
 
@@ -169,7 +170,10 @@ class PhoneRTCPlugin : CDVPlugin {
     
     func showVideoView(command: CDVInvokedUrlCommand) {
         dispatch_async(dispatch_get_main_queue()) {
-            self.localVideoView!.hidden = false;
+            if self.localVideoView != nil {
+                self.localVideoView!.hidden = false;
+            }
+            
             
             for remoteVideoView in self.remoteVideoViews {
                 remoteVideoView.videoView.hidden = false;
