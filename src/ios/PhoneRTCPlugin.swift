@@ -158,6 +158,16 @@ class PhoneRTCPlugin : CDVPlugin {
         }
     }
     
+    func refreshVideoView(command: CDVInvokedUrlCommand) {
+        let params: AnyObject = command.argumentAtIndex(0)
+        println(params);
+        dispatch_async(dispatch_get_main_queue()) {
+            //replace the container layout then refresh the view
+            self.videoConfig?.container = VideoLayoutParams(data: params);
+            self.refreshVideoContainer();
+        }
+    }
+    
     func hideVideoView(command: CDVInvokedUrlCommand) {
         dispatch_async(dispatch_get_main_queue()) {
             self.localVideoView!.hidden = true;
@@ -267,6 +277,43 @@ class PhoneRTCPlugin : CDVPlugin {
         
         if n == 0 {
             return
+        }
+        
+        if n == 1 {
+            //just fill the container with the video
+            //TODO adjust the container size to account for the video aspect ratio; if you don't do this
+            //you end up stretching the video
+            let pair = self.remoteVideoViews[0]
+            
+            println(pair.videoTrack.description);
+            pair.videoView.frame = CGRectMake(
+                CGFloat(self.videoConfig!.container.x),
+                CGFloat(self.videoConfig!.container.y),
+                CGFloat(self.videoConfig!.container.width),
+                CGFloat(self.videoConfig!.container.height)
+            )
+            return;
+        }
+        
+        if n == 2 {
+            // for now assume landscape ipad and give each video half the width
+            var width = CGFloat(self.videoConfig!.container.width)/2;
+
+            var pair = self.remoteVideoViews[0]
+            pair.videoView.frame = CGRectMake(
+                CGFloat(self.videoConfig!.container.x),
+                CGFloat(self.videoConfig!.container.y),
+                CGFloat(width),
+                CGFloat(self.videoConfig!.container.height)
+            );
+            pair = self.remoteVideoViews[1];
+            pair.videoView.frame = CGRectMake(
+                CGFloat(self.videoConfig!.container.x) + width,
+                CGFloat(self.videoConfig!.container.y),
+                CGFloat(width),
+                CGFloat(self.videoConfig!.container.height)
+            );
+            return;
         }
         
         var rows = n < 9 ? 2 : 3
