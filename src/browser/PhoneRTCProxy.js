@@ -505,7 +505,7 @@ function refreshVideoView(event) {
 	}
 	
 	else{
-		/* split the container so the aspect ratios of the resulting parts is closest to the video aspect ration
+		/* split the container so the aspect ratios of the resulting parts is closest to the video aspect ratios
 		 * assume all videos are the same ratio
 		 */
 		var videoBounds = getBoundsFromEl(remoteVideoViews[0]);

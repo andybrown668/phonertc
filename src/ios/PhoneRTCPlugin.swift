@@ -276,76 +276,45 @@ class PhoneRTCPlugin : CDVPlugin {
             return
         }
         
+        let container = self.videoConfig!.container
+        var bounds = CGRect(x: container.x, y: container.y, width: container.width, height: container.height)
+        
         if n == 1 {
             //just fill the container with the video
-            //TODO adjust the container size to account for the video aspect ratio; if you don't do this
-            //you end up stretching the video
-            let pair = self.remoteVideoViews[0]
-            
-            println(pair.videoTrack.description);
-            pair.videoView.frame = CGRectMake(
-                CGFloat(self.videoConfig!.container.x),
-                CGFloat(self.videoConfig!.container.y),
-                CGFloat(self.videoConfig!.container.width),
-                CGFloat(self.videoConfig!.container.height)
-            )
+            // set the video size to fit within the bounds of the entire container
+            self.remoteVideoViews[0].setVideoSize(bounds);
             return;
         }
         
         if n == 2 {
-            // for now assume landscape ipad and give each video half the width
-            var width = CGFloat(self.videoConfig!.container.width)/2;
+            //split the display horizontally or vertically to maximize the usage given the two input video aspect ratios
 
-            var pair = self.remoteVideoViews[0]
-            pair.videoView.frame = CGRectMake(
-                CGFloat(self.videoConfig!.container.x),
-                CGFloat(self.videoConfig!.container.y),
-                CGFloat(width),
-                CGFloat(self.videoConfig!.container.height)
-            );
-            pair = self.remoteVideoViews[1];
-            pair.videoView.frame = CGRectMake(
-                CGFloat(self.videoConfig!.container.x) + width,
-                CGFloat(self.videoConfig!.container.y),
-                CGFloat(width),
-                CGFloat(self.videoConfig!.container.height)
-            );
-            return;
-        }
-        
-        var rows = n < 9 ? 2 : 3
-        var videosInRow = n == 2 ? 2 : Int(ceil(Float(n) / Float(rows)))
-        
-        var videoSize = Int(Float(self.videoConfig!.container.width) / Float(videosInRow))
-        var actualRows = Int(ceil(Float(n) / Float(videosInRow)))
- 
-        var y = getCenter(actualRows,
-            videoSize: videoSize,
-            containerSize: self.videoConfig!.container.height)
-                + self.videoConfig!.container.y
-      
-        var videoViewIndex = 0
-        
-        for var row = 0; row < rows && videoViewIndex < n; row++ {
-            var x = getCenter(row < row - 1 || n % rows == 0 ?
-                                videosInRow : n - (min(n, videoViewIndex + videosInRow) - 1),
-                videoSize: videoSize,
-                containerSize: self.videoConfig!.container.width)
-                    + self.videoConfig!.container.x
+            //calculate screen usage if split horizonally
+            bounds.size.width /= 2
+            let horizontalUsage = self.remoteVideoViews[0].getVideoArea(bounds)
+                                + self.remoteVideoViews[1].getVideoArea(bounds);
+            bounds.size.width *= 2
+
+            //calculate screen usage if split vertically
+            bounds.size.height /= 2
+            let verticalUsage = self.remoteVideoViews[0].getVideoArea(bounds)
+                + self.remoteVideoViews[1].getVideoArea(bounds);
+            bounds.size.height *= 2
             
-            for var video = 0; video < videosInRow && videoViewIndex < n; video++ {
-                let pair = self.remoteVideoViews[videoViewIndex++]
-                pair.videoView.frame = CGRectMake(
-                    CGFloat(x),
-                    CGFloat(y),
-                    CGFloat(videoSize),
-                    CGFloat(videoSize)
-                )
-
-                x += Int(videoSize)
+            // use the split that makes the best space for the input videos
+            if horizontalUsage >= verticalUsage{
+                bounds.size.width /= 2
+                self.remoteVideoViews[0].setVideoSize(bounds);
+                bounds.origin.x += bounds.size.width
+                self.remoteVideoViews[1].setVideoSize(bounds);
             }
-            
-            y += Int(videoSize)
+            else{
+                bounds.size.height /= 2
+                self.remoteVideoViews[0].setVideoSize(bounds);
+                bounds.origin.y += bounds.size.height
+                self.remoteVideoViews[1].setVideoSize(bounds);
+            }
+            return;
         }
     }
     
@@ -375,7 +344,64 @@ class PhoneRTCPlugin : CDVPlugin {
     }
 }
 
-struct VideoTrackViewPair {
+class VideoTrackViewPair : RTCEAGLVideoViewDelegate {
     var videoView: RTCEAGLVideoView
     var videoTrack: RTCVideoTrack
+    var aspectRatio: CGFloat
+    
+    init(videoView:RTCEAGLVideoView, videoTrack: RTCVideoTrack){
+        self.videoView = videoView
+        self.videoTrack = videoTrack
+        self.aspectRatio = 640/480
+        videoView.delegate = self
+    }
+    
+    @objc func videoView(videoView: RTCEAGLVideoView!,
+        didChangeVideoSize size: CGSize){
+            print(size);
+            self.aspectRatio = size.width/size.height
+            return
+    }
+    
+    func getVideoArea(bounds: CGRect) -> CGFloat {
+        // return the area we can use within the given bounds respecting the video source aspect ratio
+        
+        // if the height < width*aspect-ratio then don't use all the width
+        var width = bounds.width
+        var height = bounds.height
+        
+        if height < width / self.aspectRatio{
+            width = height * self.aspectRatio
+        }
+        else{
+            height = width / self.aspectRatio
+        }
+        return width*height;
+    }
+
+    func setVideoSize(bounds: CGRect){
+        // use the aspect ratio to make the most use of the given maximum space
+        // centering the resulting frame in the bounds
+        var offset = CGPoint(x: bounds.origin.x, y: bounds.origin.y)
+
+        // if the height < width*aspect-ratio then don't use all the width
+        var width = bounds.width
+        var height = bounds.height
+
+        if height < width / self.aspectRatio{
+            width = height * self.aspectRatio
+            offset.x += (bounds.width - width) / 2
+        }
+        else{
+            height = width / self.aspectRatio
+            offset.y += (bounds.height - height) / 2
+        }
+        
+        self.videoView.frame = CGRectMake(
+            offset.x,
+            offset.y,
+            width,
+            height
+        )
+    }
 }
