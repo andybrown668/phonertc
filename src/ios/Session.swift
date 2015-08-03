@@ -102,18 +102,13 @@ class Session {
     func receiveMessage(message: String) {
         // Parse the incoming JSON message.
         var error : NSError?
-        let data : AnyObject?
-        do {
-            data = try NSJSONSerialization.JSONObjectWithData(
-                        message.dataUsingEncoding(NSUTF8StringEncoding)!,
-                        options: NSJSONReadingOptions())
-        } catch let error1 as NSError {
-            error = error1
-            data = nil
-        }
+        let data : AnyObject? = NSJSONSerialization.JSONObjectWithData(
+            message.dataUsingEncoding(NSUTF8StringEncoding)!,
+            options: NSJSONReadingOptions.allZeros,
+            error: &error)
         if let object: AnyObject = data {
             // Log the message to console.
-            print("Received Message: \(object)")
+            println("Received Message: \(object)")
             // If the message has a type try to handle it.
             if let type = object.objectForKey("type") as? String {
                 switch type {
@@ -143,13 +138,13 @@ class Session {
                     case "bye":
                         self.disconnect(false)
                     default:
-                        print("Invalid message \(message)")
+                        println("Invalid message \(message)")
                 }
             }
         } else {
             // If there was an error parsing then print it to console.
             if let parseError = error {
-                print("There was an error parsing the client message: \(parseError.localizedDescription)")
+                println("There was an error parsing the client message: \(parseError.localizedDescription)")
             }
             // If there is no data then exit.
             return
@@ -167,13 +162,9 @@ class Session {
                     "type": "bye"
                 ]
             
-                let data: NSData?
-                do {
-                    data = try NSJSONSerialization.dataWithJSONObject(json,
-                                        options: NSJSONWritingOptions())
-                } catch _ {
-                    data = nil
-                }
+                let data = NSJSONSerialization.dataWithJSONObject(json,
+                    options: NSJSONWritingOptions.allZeros,
+                    error: nil)
             
                 self.sendMessage(data!)
             }
@@ -187,13 +178,9 @@ class Session {
             "type": "__disconnected"
         ]
         
-        let data: NSData?
-        do {
-            data = try NSJSONSerialization.dataWithJSONObject(json,
-                        options: NSJSONWritingOptions())
-        } catch _ {
-            data = nil
-        }
+        let data = NSJSONSerialization.dataWithJSONObject(json,
+            options: NSJSONWritingOptions.allZeros,
+            error: nil)
         
         self.sendMessage(data!)
         
@@ -215,14 +202,10 @@ class Session {
         
         let origSDP = sdpDescription.stringByReplacingOccurrencesOfString("\r\n", withString: "\n")
         var lines = origSDP.componentsSeparatedByString("\n")
-        let isac16kRegex: NSRegularExpression?
-        do {
-            isac16kRegex = try NSRegularExpression(
-                        pattern: "^a=rtpmap:(\\d+) ISAC/16000[\r]?$",
-                        options: NSRegularExpressionOptions())
-        } catch _ {
-            isac16kRegex = nil
-        }
+        let isac16kRegex = NSRegularExpression(
+            pattern: "^a=rtpmap:(\\d+) ISAC/16000[\r]?$",
+            options: NSRegularExpressionOptions.allZeros,
+            error: nil)
         
         for var i = 0;
             (i < lines.count) && (mLineIndex == -1 || isac16kRtpMap == nil);
@@ -237,12 +220,12 @@ class Session {
         }
         
         if mLineIndex == -1 {
-            print("No m=audio line, so can't prefer iSAC")
+            println("No m=audio line, so can't prefer iSAC")
             return origSDP
         }
         
         if isac16kRtpMap == nil {
-            print("No ISAC/16000 line, so can't prefer iSAC")
+            println("No ISAC/16000 line, so can't prefer iSAC")
             return origSDP
         }
         
@@ -268,10 +251,10 @@ class Session {
     }
     
     func firstMatch(pattern: NSRegularExpression, string: String) -> String? {
-        let nsString = string as NSString
+        var nsString = string as NSString
         
         let result = pattern.firstMatchInString(string,
-            options: NSMatchingOptions(),
+            options: NSMatchingOptions.allZeros,
             range: NSMakeRange(0, nsString.length))
         
         if result == nil {

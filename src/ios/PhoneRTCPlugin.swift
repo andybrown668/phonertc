@@ -44,7 +44,7 @@ class PhoneRTCPlugin : CDVPlugin {
                     // allow for a success callback
                     let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
                     pluginResult.setKeepCallbackAsBool(true);
-                    self.commandDelegate!.sendPluginResult(pluginResult, callbackId:command.callbackId)
+                    self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
                 }
             }
         }
@@ -89,13 +89,14 @@ class PhoneRTCPlugin : CDVPlugin {
     }
 
     func sendMessage(callbackId: String, message: NSData) {
-        let json = try! NSJSONSerialization.JSONObjectWithData(message,
-            options: NSJSONReadingOptions.MutableLeaves) as! NSDictionary
+        let json = NSJSONSerialization.JSONObjectWithData(message,
+            options: NSJSONReadingOptions.MutableLeaves,
+            error: nil) as! NSDictionary
         
         let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json as [NSObject : AnyObject])
         pluginResult.setKeepCallbackAsBool(true);
         
-        self.commandDelegate!.sendPluginResult(pluginResult, callbackId:callbackId)
+        self.commandDelegate.sendPluginResult(pluginResult, callbackId:callbackId)
     }
     
     func setVideoView(command: CDVInvokedUrlCommand) {
@@ -105,7 +106,7 @@ class PhoneRTCPlugin : CDVPlugin {
             // create session config from the JS params
             let videoConfig = VideoConfig(data: config)
             
-            print("\(videoConfig) yeah?")
+            println("\(videoConfig) yeah?")
             
             // make sure that it's not junk
             if videoConfig.container.width == 0 || videoConfig.container.height == 0 {
@@ -142,7 +143,7 @@ class PhoneRTCPlugin : CDVPlugin {
                         )
                     } else {
                         // otherwise, create the local video view
-                        self.localVideoView = self.createVideoView(params)
+                        self.localVideoView = self.createVideoView(params: params)
                         self.localVideoTrack!.addRenderer(self.localVideoView!)
                     }
                 }
@@ -152,14 +153,14 @@ class PhoneRTCPlugin : CDVPlugin {
             // allow for a success callback
             let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
             pluginResult.setKeepCallbackAsBool(true);
-            self.commandDelegate!.sendPluginResult(pluginResult, callbackId:command.callbackId)
+            self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
 
         }
     }
     
     func refreshVideoView(command: CDVInvokedUrlCommand) {
         let params: AnyObject = command.argumentAtIndex(0)
-        print(params);
+        println(params);
         dispatch_async(dispatch_get_main_queue()) {
             //replace the container layout then refresh the view
             self.videoConfig?.container = VideoLayoutParams(data: params);
@@ -205,10 +206,11 @@ class PhoneRTCPlugin : CDVPlugin {
         } else {
             view = RTCEAGLVideoView()
         }
+        
         view.userInteractionEnabled = false
         
-        self.webView!.addSubview(view)
-        self.webView!.bringSubviewToFront(view)
+        self.webView.addSubview(view)
+        self.webView.bringSubviewToFront(view)
         
         return view
     }
@@ -244,13 +246,14 @@ class PhoneRTCPlugin : CDVPlugin {
         // add a video view without position/size as it will get
         // resized and re-positioned in refreshVideoContainer
         let videoView = createVideoView()
+        
         videoTrack.addRenderer(videoView)
         self.remoteVideoViews.append(VideoTrackViewPair(videoView: videoView, videoTrack: videoTrack))
         
         refreshVideoContainer()
         
         if self.localVideoView != nil {
-            self.webView!.bringSubviewToFront(self.localVideoView!)
+            self.webView.bringSubviewToFront(self.localVideoView!)
         }
     }
     
@@ -270,7 +273,7 @@ class PhoneRTCPlugin : CDVPlugin {
     }
     
     func refreshVideoContainer() {
-        let n = self.remoteVideoViews.count
+        var n = self.remoteVideoViews.count
         
         if n == 0 {
             return

@@ -10,11 +10,11 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
     func peerConnection(peerConnection: RTCPeerConnection!,
         didCreateSessionDescription originalSdp: RTCSessionDescription!, error: NSError!) {
         if error != nil {
-            print("SDP OnFailure: \(error)")
+            println("SDP OnFailure: \(error)")
             return
         }
             
-        let sdp = RTCSessionDescription(
+        var sdp = RTCSessionDescription(
             type: originalSdp.type,
             sdp: self.session.preferISAC(originalSdp.description)
         )
@@ -29,16 +29,9 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
                 "sdp": sdp.description
             ]
             
-            let data: NSData?
-            do {
-                data = try NSJSONSerialization.dataWithJSONObject(json,
-                                options: NSJSONWritingOptions())
-            } catch let error as NSError {
-                jsonError = error
-                data = nil
-            } catch {
-                fatalError()
-            }
+            let data = NSJSONSerialization.dataWithJSONObject(json,
+                options: NSJSONWritingOptions.allZeros,
+                error: &jsonError)
             
             self.session.sendMessage(data!)
         }
@@ -47,14 +40,14 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
     func peerConnection(peerConnection: RTCPeerConnection!,
         didSetSessionDescriptionWithError error: NSError!) {
         if error != nil {
-            print("SDP OnFailure: \(error)")
+            println("SDP OnFailure: \(error)")
             return
         }
             
         dispatch_async(dispatch_get_main_queue()) {
             if self.session.config.isInitiator {
                 if self.session.peerConnection.remoteDescription != nil {
-                    print("SDP onSuccess - drain candidates")
+                    println("SDP onSuccess - drain candidates")
                     self.drainRemoteCandidates()
                 }
             } else {
