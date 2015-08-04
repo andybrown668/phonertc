@@ -170,7 +170,10 @@ class PhoneRTCPlugin : CDVPlugin {
     
     func hideVideoView(command: CDVInvokedUrlCommand) {
         dispatch_async(dispatch_get_main_queue()) {
-            self.localVideoView!.hidden = true;
+            
+            if self.localVideoView != nil {
+                self.localVideoView!.hidden = true;
+            }
             
             for remoteVideoView in self.remoteVideoViews {
                 remoteVideoView.videoView.hidden = true;

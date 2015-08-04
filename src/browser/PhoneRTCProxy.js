@@ -375,12 +375,18 @@ module.exports = {
       remoteVideoView.style.display = 'none';
     });
   },
-  showVideoView: function (success, error, options) {
-    localVideoView.style.display = '';
-    remoteVideoViews.forEach(function (remoteVideoView) {
-      remoteVideoView.style.display = '';
-    });
-  }
+  showVideoView : function(success, error, options) {
+	if (!localVideoView)
+		console.warn('invalid call to showview view in browser');
+	else
+		localVideoView.style.display = '';
+	if (!!remoteVideoViews) {
+		remoteVideoViews.forEach(
+			function(remoteVideoView) {
+				remoteVideoView.style.display = '';
+			});
+		}
+	}
 };
 
 function addRemoteStream(stream) {
