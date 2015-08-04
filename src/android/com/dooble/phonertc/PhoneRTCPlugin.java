@@ -326,7 +326,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 		_videoView = new VideoGLView(cordova.getActivity(), size);
 		VideoRendererGui.setView(_videoView);
 	
-		((WebView) webView.getView()).addView(_videoView, _videoParams);
+		webView.addView(_videoView, _videoParams);
 	}
 	
 	private void refreshVideoView() {
@@ -346,7 +346,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 		}
 		
 		if (_videoView != null) {
-			((WebView) webView.getView()).removeView(_videoView);
+			webView.removeView(_videoView);
 			_videoView = null;
 		}
 		
@@ -430,7 +430,7 @@ public class PhoneRTCPlugin extends CordovaPlugin {
 			
 					if (_videoView != null) {
 						_videoView.setVisibility(View.GONE);
-						((WebView) webView.getView()).removeView(_videoView);
+						webView.removeView(_videoView);
 					}
 
 					if (_videoSource != null) {
