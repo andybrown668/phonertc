@@ -16,12 +16,14 @@ function Session(sessionKey, config, sendMessageCallback) {
 
   self.onIceConnectionStateChange = function(event){
 	  //if the new ice connection state is 'disconnected' then the peer disappeared (ie didn't say 'bye')
-	  //so tear down this session and inform the plugin
+	  //so tear down this session
 	  var iceConnectionState = event.target.iceConnectionState;
 	  if (iceConnectionState === 'disconnected')
 		  self.disconnect(false);
 	  else
 		  console.log('ice connection state change to: ' + iceConnectionState);
+	  //tell the client
+	  self.sendMessage({ type: '__iceConnectionStateChange', state: iceConnectionState });
   };
   
   self.onIceCandidate = function (event) {

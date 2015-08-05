@@ -63,6 +63,8 @@ function Session(config) {
       callEvent('answer');
     } else if (data.type === '__disconnected') {
       callEvent('disconnect');
+    } else if (data.type === '__iceConnectionStateChange') {
+        callEvent('iceConnectionChange', data.state);
     } else {
       callEvent('sendMessage', data);
     }
