@@ -14,6 +14,16 @@ function Session(sessionKey, config, sendMessageCallback) {
   self.config = config;
   self.sendMessage = sendMessageCallback;
 
+  self.onIceConnectionStateChange = function(event){
+	  //if the new ice connection state is 'disconnected' then the peer disappeared (ie didn't say 'bye')
+	  //so tear down this session and inform the plugin
+	  var iceConnectionState = event.target.iceConnectionState;
+	  if (iceConnectionState === 'disconnected')
+		  self.disconnect(false);
+	  else
+		  console.log('ice connection state change to: ' + iceConnectionState);
+  };
+  
   self.onIceCandidate = function (event) {
     if (event.candidate) {
       self.sendMessage({
@@ -177,7 +187,8 @@ Session.prototype.call = function (success, error) {
 
     self.peerConnection.onicecandidate = self.onIceCandidate;
     self.peerConnection.onaddstream = self.onRemoteStreamAdded;
-
+    self.peerConnection.oniceconnectionstatechange = self.onIceConnectionStateChange;
+    
     // attach the stream to the peer connection
     self.createOrUpdateStream.call(self);
 

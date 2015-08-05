@@ -40,7 +40,15 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
     
     func peerConnection(peerConnection: RTCPeerConnection!,
         iceConnectionChanged newState: RTCICEConnectionState) {
-        println("PCO onIceConnectionChange. \(newState)")
+        //if the new ice connection state is 'disconnected' then the peer disappeared (ie didn't say 'bye')
+        //so tear down this session and inform the plugin
+        switch newState.value{
+        case RTCICEConnectionDisconnected.value:
+            println("ice connection is closed")
+            self.session.disconnect(false);
+        default:
+            println("PCO onIceConnectionChange. \(newState)")
+        }
     }
     
     func peerConnection(peerConnection: RTCPeerConnection!,
