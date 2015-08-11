@@ -49,6 +49,21 @@ class PCObserver : NSObject, RTCPeerConnectionDelegate {
         default:
             println("PCO onIceConnectionChange. \(newState)")
         }
+        
+        //send a string literal for the current ice state to the plugin
+        var state = ""
+        switch newState.value{
+        case RTCICEConnectionNew.value: state="new"
+        case RTCICEConnectionChecking.value: state="checking"
+        case RTCICEConnectionConnected.value: state="connected"
+        case RTCICEConnectionCompleted.value: state="completed"
+        case RTCICEConnectionFailed.value: state="failed"
+        case RTCICEConnectionDisconnected.value: state="disconnected"
+        case RTCICEConnectionClosed.value: state="closed"
+        default: state="unexpected\(newState.value)"
+        }
+        self.session.sendMessage(
+            "{\"type\": \"__iceConnectionStateChange\", \"state\": \"\(state)\"}".dataUsingEncoding(NSUTF8StringEncoding)!)
     }
     
     func peerConnection(peerConnection: RTCPeerConnection!,
