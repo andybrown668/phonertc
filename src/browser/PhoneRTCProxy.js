@@ -358,6 +358,7 @@ module.exports = {
                 localVideoView.muted = true;
                 localVideoView.style.position = 'absolute';
                 localVideoView.style.zIndex = 999;
+                localVideoView.style.display = 'none';
                 localVideoView.addEventListener("loadeddata", refreshVideoView);
 
                 refreshLocalVideoView();
@@ -404,15 +405,14 @@ module.exports = {
     },
 
     hideVideoView: function(success, error, options) {
-        localVideoView.style.display = 'none';
+        if (localVideoView)
+            localVideoView.style.display = 'none';
         remoteVideoViews.forEach(function(remoteVideoView) {
             remoteVideoView.style.display = 'none';
         });
     },
     showVideoView: function(success, error, options) {
-        if (!localVideoView)
-            console.warn('invalid call to showview view in browser');
-        else
+        if (localVideoView)
             localVideoView.style.display = '';
         if (!!remoteVideoViews) {
             remoteVideoViews.forEach(
