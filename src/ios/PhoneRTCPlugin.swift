@@ -106,8 +106,6 @@ class PhoneRTCPlugin : CDVPlugin {
             // create session config from the JS params
             let videoConfig = VideoConfig(data: config)
             
-            println("\(videoConfig) yeah?")
-            
             // make sure that it's not junk
             if videoConfig.container.width == 0 || videoConfig.container.height == 0 {
                 return
@@ -211,7 +209,7 @@ class PhoneRTCPlugin : CDVPlugin {
         }
         
         view.userInteractionEnabled = false
-        
+        view.hidden = true;
         self.webView.addSubview(view)
         self.webView.bringSubviewToFront(view)
         
