@@ -441,10 +441,11 @@ function addRemoteStream(stream) {
 }
 
 function removeRemoteStream(videoView) {
-    console.log(remoteVideoViews);
     document.body.removeChild(videoView);
-    remoteVideoViews.splice(videoView, 1);
-    console.log(remoteVideoViews);
+    var index = _.findIndex(remoteVideoViews, function(v) {
+        return v === videoView;
+    });
+    remoteVideoViews.splice(index, 1);
 
     refreshVideoView();
 }
