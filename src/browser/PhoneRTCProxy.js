@@ -146,6 +146,15 @@ Session.prototype.createOrUpdateStream = function() {
 Session.prototype.sendOffer = function() {
     var self = this;
     self.peerConnection.createOffer(function(sdp) {
+        //browser to iOS calls fail when iOS tries to consume media with certain flags
+        //(possibly fixable by compiling a new libPhoneRTC library?)
+        sdp.sdp = sdp.sdp.replace(/UDP\/TLS\//g, '');
+
+        /*console.log(sdp.sdp);
+        _.each(sdp.sdp.split('\r\n'), function(c) {
+            console.log(c);
+        });*/
+
         self.peerConnection.setLocalDescription(sdp, function() {
             console.log('Set session description success.');
         }, function(error) {
