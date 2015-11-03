@@ -158,12 +158,12 @@ Session.prototype.sendOffer = function() {
         self.peerConnection.setLocalDescription(sdp, function() {
             console.log('Set session description success.');
         }, function(error) {
-            console.log(error);
+            console.error(error);
         });
 
         self.sendMessage(sdp);
     }, function(error) {
-        console.log(error);
+        console.error(error);
     }, {
         mandatory: {
             OfferToReceiveAudio: true,

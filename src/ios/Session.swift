@@ -5,6 +5,7 @@ class Session {
     var config: SessionConfig
     var constraints: RTCMediaConstraints
     var peerConnection: RTCPeerConnection!
+    var sdp: RTCSessionDescription?
     var pcObserver: PCObserver!
     var queuedRemoteCandidates: [RTCICECandidate]?
     var peerConnectionFactory: RTCPeerConnectionFactory
@@ -60,11 +61,20 @@ class Session {
                 constraints: self.constraints,
                 delegate: self.pcObserver)
         
+        // use stored sdp?
+        if (self.sdp != nil){
+            print("set remote description 1");
+            self.peerConnection.setRemoteDescriptionWithDelegate(SessionDescriptionDelegate(session: self),
+                sessionDescription: self.sdp)
+        }
         // create a media stream and add audio and/or video tracks
+        print("create stream");
         createOrUpdateStream()
+        print("create stream2");
         
         // create offer if initiator
         if self.config.isInitiator {
+            print("create offer");
             self.peerConnection.createOfferWithDelegate(SessionDescriptionDelegate(session: self),
                 constraints: constraints)
         }
@@ -102,15 +112,19 @@ class Session {
     func receiveMessage(message: String) {
         // Parse the incoming JSON message.
         var error : NSError?
-        let data : AnyObject? = NSJSONSerialization.JSONObjectWithData(
-            message.dataUsingEncoding(NSUTF8StringEncoding)!,
-            options: NSJSONReadingOptions.allZeros,
-            error: &error)
+        let data : AnyObject?
+        do {
+            data = try NSJSONSerialization.JSONObjectWithData(
+                        message.dataUsingEncoding(NSUTF8StringEncoding)!,
+                        options: NSJSONReadingOptions())
+        } catch let error1 as NSError {
+            error = error1
+            data = nil
+        }
         if let object: AnyObject = data {
-            // Log the message to console.
-            println("Received Message: \(object)")
             // If the message has a type try to handle it.
             if let type = object.objectForKey("type") as? String {
+                print("Received \(type)")
                 switch type {
                 case "candidate":
                     let mid: String = data?.objectForKey("id") as! NSString as String
@@ -124,6 +138,7 @@ class Session {
                     )
                     
                     if self.queuedRemoteCandidates != nil {
+                        print("queued");
                         self.queuedRemoteCandidates?.append(candidate)
                     } else {
                         self.peerConnection.addICECandidate(candidate)
@@ -131,20 +146,28 @@ class Session {
                     
                     case "offer", "answer":
                         if let sdpString = object.objectForKey("sdp") as? String {
+                            //let sdp = RTCSessionDescription(type: type, sdp: self.preferISAC(sdpString))
                             let sdp = RTCSessionDescription(type: type, sdp: self.preferISAC(sdpString))
-                            self.peerConnection.setRemoteDescriptionWithDelegate(SessionDescriptionDelegate(session: self),
+                            //we may not yet have a peer connection; if we don't, we save the sdp for use when our peerconnection is made
+                            if (self.peerConnection == nil){
+                                self.sdp = sdp
+                            }
+                            else{
+                                print("set remote description");
+                                self.peerConnection.setRemoteDescriptionWithDelegate(SessionDescriptionDelegate(session: self),
                                                                                  sessionDescription: sdp)
-                        }
+                            }
+                    }
                     case "bye":
                         self.disconnect(false)
                     default:
-                        println("Invalid message \(message)")
+                        print("Invalid message \(message)")
                 }
             }
         } else {
             // If there was an error parsing then print it to console.
             if let parseError = error {
-                println("There was an error parsing the client message: \(parseError.localizedDescription)")
+                print("There was an error parsing the client message: \(parseError.localizedDescription)")
             }
             // If there is no data then exit.
             return
@@ -162,9 +185,8 @@ class Session {
                     "type": "bye"
                 ]
             
-                let data = NSJSONSerialization.dataWithJSONObject(json,
-                    options: NSJSONWritingOptions.allZeros,
-                    error: nil)
+                let data = try? NSJSONSerialization.dataWithJSONObject(json,
+                    options: NSJSONWritingOptions())
             
                 self.sendMessage(data!)
             }
@@ -178,9 +200,8 @@ class Session {
             "type": "__disconnected"
         ]
         
-        let data = NSJSONSerialization.dataWithJSONObject(json,
-            options: NSJSONWritingOptions.allZeros,
-            error: nil)
+        let data = try? NSJSONSerialization.dataWithJSONObject(json,
+            options: NSJSONWritingOptions())
         
         self.sendMessage(data!)
         
@@ -202,10 +223,9 @@ class Session {
         
         let origSDP = sdpDescription.stringByReplacingOccurrencesOfString("\r\n", withString: "\n")
         var lines = origSDP.componentsSeparatedByString("\n")
-        let isac16kRegex = NSRegularExpression(
+        let isac16kRegex = try? NSRegularExpression(
             pattern: "^a=rtpmap:(\\d+) ISAC/16000[\r]?$",
-            options: NSRegularExpressionOptions.allZeros,
-            error: nil)
+            options: NSRegularExpressionOptions())
         
         for var i = 0;
             (i < lines.count) && (mLineIndex == -1 || isac16kRtpMap == nil);
@@ -220,12 +240,12 @@ class Session {
         }
         
         if mLineIndex == -1 {
-            println("No m=audio line, so can't prefer iSAC")
+            print("No m=audio line, so can't prefer iSAC")
             return origSDP
         }
         
         if isac16kRtpMap == nil {
-            println("No ISAC/16000 line, so can't prefer iSAC")
+            print("No ISAC/16000 line, so can't prefer iSAC")
             return origSDP
         }
         
@@ -246,15 +266,15 @@ class Session {
             }
         }
         
-        lines[mLineIndex] = " ".join(newMLine)
-        return "\r\n".join(lines)
+        lines[mLineIndex] = newMLine.joinWithSeparator(" ")
+        return lines.joinWithSeparator("\r\n")
     }
     
     func firstMatch(pattern: NSRegularExpression, string: String) -> String? {
-        var nsString = string as NSString
+        let nsString = string as NSString
         
         let result = pattern.firstMatchInString(string,
-            options: NSMatchingOptions.allZeros,
+            options: NSMatchingOptions(),
             range: NSMakeRange(0, nsString.length))
         
         if result == nil {
