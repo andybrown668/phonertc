@@ -607,7 +607,10 @@ function dropLocalStreams() {
     }
 
     localStreams.forEach(function(stream) {
-        stream.stop();
+        _.each(stream.getTracks(), function(track) {
+            track.stop();
+        });
+
     });
 
     localStreams = [];
