@@ -44,7 +44,7 @@ class PhoneRTCPlugin : CDVPlugin {
                     // allow for a success callback
                     let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
                     pluginResult.setKeepCallbackAsBool(true);
-                    self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
+                    self.commandDelegate!.sendPluginResult(pluginResult, callbackId:command.callbackId)
                 }
             }
         }
@@ -89,14 +89,24 @@ class PhoneRTCPlugin : CDVPlugin {
     }
 
     func sendMessage(callbackId: String, message: NSData) {
-        let json = NSJSONSerialization.JSONObjectWithData(message,
-            options: NSJSONReadingOptions.MutableLeaves,
-            error: nil) as! NSDictionary
+        var json : AnyObject?
+        do{
+            json = try NSJSONSerialization.JSONObjectWithData(message, options: NSJSONReadingOptions.MutableLeaves) as! NSDictionary
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
+
+        var pluginResult : CDVPluginResult
+        if json != nil {
+            pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json as! [NSObject : AnyObject])
+        }
+        else{
+            pluginResult = CDVPluginResult(status: CDVCommandStatus_JSON_EXCEPTION)
+        }
         
-        let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: json as [NSObject : AnyObject])
         pluginResult.setKeepCallbackAsBool(true);
+        self.commandDelegate!.sendPluginResult(pluginResult, callbackId:callbackId)
         
-        self.commandDelegate.sendPluginResult(pluginResult, callbackId:callbackId)
     }
     
     func setVideoView(command: CDVInvokedUrlCommand) {
@@ -141,7 +151,7 @@ class PhoneRTCPlugin : CDVPlugin {
                         )
                     } else {
                         // otherwise, create the local video view
-                        self.localVideoView = self.createVideoView(params: params)
+                        self.localVideoView = self.createVideoView(params)
                         self.localVideoTrack!.addRenderer(self.localVideoView!)
                     }
                 }
@@ -151,14 +161,14 @@ class PhoneRTCPlugin : CDVPlugin {
             // allow for a success callback
             let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
             pluginResult.setKeepCallbackAsBool(true);
-            self.commandDelegate.sendPluginResult(pluginResult, callbackId:command.callbackId)
+            self.commandDelegate!.sendPluginResult(pluginResult, callbackId:command.callbackId)
 
         }
     }
     
     func refreshVideoView(command: CDVInvokedUrlCommand) {
         let params: AnyObject = command.argumentAtIndex(0)
-        println(params);
+        print(params);
         dispatch_async(dispatch_get_main_queue()) {
             //replace the container layout then refresh the view
             self.videoConfig?.container = VideoLayoutParams(data: params);
@@ -210,8 +220,8 @@ class PhoneRTCPlugin : CDVPlugin {
         
         view.userInteractionEnabled = false
         view.hidden = true;
-        self.webView.addSubview(view)
-        self.webView.bringSubviewToFront(view)
+        self.webView!.addSubview(view)
+        self.webView!.bringSubviewToFront(view)
         
         return view
     }
@@ -254,7 +264,7 @@ class PhoneRTCPlugin : CDVPlugin {
         refreshVideoContainer()
         
         if self.localVideoView != nil {
-            self.webView.bringSubviewToFront(self.localVideoView!)
+            self.webView!.bringSubviewToFront(self.localVideoView!)
         }
     }
     
@@ -274,7 +284,7 @@ class PhoneRTCPlugin : CDVPlugin {
     }
     
     func refreshVideoContainer() {
-        var n = self.remoteVideoViews.count
+        let n = self.remoteVideoViews.count
         
         if n == 0 {
             return

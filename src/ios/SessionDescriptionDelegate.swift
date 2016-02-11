@@ -10,11 +10,11 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
     func peerConnection(peerConnection: RTCPeerConnection!,
         didCreateSessionDescription originalSdp: RTCSessionDescription!, error: NSError!) {
         if error != nil {
-            println("SDP OnFailure: \(error)")
+            print("SDP OnFailure: \(error)")
             return
         }
             
-        var sdp = RTCSessionDescription(
+        let sdp = RTCSessionDescription(
             type: originalSdp.type,
             sdp: self.session.preferISAC(originalSdp.description)
         )
@@ -22,32 +22,33 @@ class SessionDescriptionDelegate : UIResponder, RTCSessionDescriptionDelegate {
         self.session.peerConnection.setLocalDescriptionWithDelegate(self, sessionDescription: sdp)
             
         dispatch_async(dispatch_get_main_queue()) {
-            var jsonError: NSError?
-            
             let json: AnyObject = [
                 "type": sdp.type,
                 "sdp": sdp.description
             ]
+
+            do {
+                let data = try NSJSONSerialization.dataWithJSONObject(json, options: NSJSONWritingOptions())
+                self.session.sendMessage(data)
+            }
+            catch let error as NSError{
+                print(error.localizedDescription)
+            }
             
-            let data = NSJSONSerialization.dataWithJSONObject(json,
-                options: NSJSONWritingOptions.allZeros,
-                error: &jsonError)
-            
-            self.session.sendMessage(data!)
         }
     }
     
     func peerConnection(peerConnection: RTCPeerConnection!,
         didSetSessionDescriptionWithError error: NSError!) {
         if error != nil {
-            println("SDP OnFailure: \(error)")
+            print("SDP OnFailure: \(error)")
             return
         }
             
         dispatch_async(dispatch_get_main_queue()) {
             if self.session.config.isInitiator {
                 if self.session.peerConnection.remoteDescription != nil {
-                    println("SDP onSuccess - drain candidates")
+                    print("SDP onSuccess - drain candidates")
                     self.drainRemoteCandidates()
                 }
             } else {
