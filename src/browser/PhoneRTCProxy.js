@@ -566,7 +566,12 @@ function refreshVideoView(event) {
         /* split the container so the aspect ratios of the resulting parts is closest to the video aspect ratios
          * assume all videos are the same ratio
          */
-        videoBounds = getBoundsFromEl(remoteVideoViews[0]);
+        videoBounds = new Bounds({
+            top: 0,
+            left: 0,
+            width: remoteVideoViews[0].videoWidth,
+            height: remoteVideoViews[0].videoHeight
+        });
 
         //keep the split having the containers that best match the video aspect ratio
         var splitVert = containerBounds.splitVert();
@@ -581,7 +586,12 @@ function refreshVideoView(event) {
     // change the video bounds to fit each container
     for (var n = 0; n < nVideos; n++) {
         containerBounds = containers[n];
-        videoBounds = getBoundsFromEl(remoteVideoViews[n]);
+        videoBounds = new Bounds({
+            top: 0,
+            left: 0,
+            width: remoteVideoViews[0].videoWidth,
+            height: remoteVideoViews[0].videoHeight
+        });
 
         //video fills the container without changing its aspect ratio 
         var newVideoBounds = containerBounds.copy();
