@@ -445,6 +445,11 @@ function addRemoteStream(stream) {
     remoteVideoViews.push(videoView);
     document.body.appendChild(videoView);
 
+    //add a name/status box to the video
+    //    var videoStatus = document.createElement('P');
+    //    videoStatus.innerText = "Andy";
+    //    document.getElementById("videoContainer").appendChild(videoStatus);
+
     refreshVideoView();
     return videoView;
 }
